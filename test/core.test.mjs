@@ -32,6 +32,7 @@ test('memory lifecycle preserves lineage, permissions, locks, history and portab
   const exported = store.export();
   const restored = new Store(':memory:');
   assert.equal(restored.import(exported).imported, 2);
+  assert.equal(restored.agents().find(a=>a.id==='codex').write,false);
   assert.deepEqual(restored.versions(first.id), store.versions(first.id));
   assert.equal(restored.handoffs().length, 1);
   assert.throws(() => restored.import(exported), /existing/);
@@ -39,6 +40,11 @@ test('memory lifecycle preserves lineage, permissions, locks, history and portab
   const empty = new Store(':memory:');
   assert.throws(() => empty.import(bad));
   assert.equal(empty.list().length, 0);
+  const reordered=structuredClone(exported);reordered.memories=reordered.memories.map(m=>Object.fromEntries(Object.entries(m).reverse()));
+  empty.grant('claude',{namespaces:[],write:false});
+  assert.equal(empty.import(reordered).imported,2);
+  assert.deepEqual(empty.agents().find(a=>a.id==='claude').namespaces,[]);
+  assert.throws(()=>store.actor('codex','project'),/scope/);
   store.remove(first.id);
   assert.equal(store.handoffs()[0].memories.length, 0);
   assert(!JSON.stringify(store.export()).includes('WAL mode'));

@@ -18,7 +18,9 @@ export function callTool(store, name, args = {}, actor) {
       return { memories: args.tier === 'full' ? memories : memories.map(({ content, ...m }) => ({ ...m, summary: content.slice(0, 220) })), reviews_due: store.due(actor).map(m => ({ id: m.id, title: m.title, due_at: m.due_at })) };
     }
     case 'get_memory': return { memory: store.get(args.id, actor), versions: store.versions(args.id, actor) };
-    case 'remember': return store.save(args.id ? { ...store.get(args.id, actor), ...args } : args, actor, args.id ?? null);
+    case 'remember':
+      if (args.id && !Number.isInteger(args.version)) throw new AppError('Include the version you read before updating a memory.');
+      return store.save(args.id ? { ...store.get(args.id, actor), ...args } : args, actor, args.id ?? null);
     case 'history': return store.history(args.query ?? '', actor);
     case 'list_paths': {
       if (args.path !== undefined && typeof args.path !== 'string') throw new AppError('Path must be a string.');

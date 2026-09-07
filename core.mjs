@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, chmodSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 
 export const TYPES = ['semantic', 'episodic', 'procedural'];
 export const NAMESPACES = ['project', 'user', 'team'];
@@ -170,7 +171,7 @@ export class Store {
     });
     this.db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
   }
-  due(actor = this.actor()) { return this.list('', actor).filter(m => m.due_at && m.due_at <= now()); }
+  due(actor = this.actor()) { return this.setting('workspace', { reminders: true }).reminders ? this.list('', actor).filter(m => m.due_at && m.due_at <= now()) : []; }
   grant(agent, input) {
     if (!AGENTS.some(a => a.id === agent) || !Array.isArray(input.namespaces) || input.namespaces.some(n => !NAMESPACES.includes(n)) || typeof input.write !== 'boolean') throw new AppError('Invalid agent permissions.');
     return this.setSetting(`grant:${agent}`, { namespaces: [...new Set(input.namespaces)], write: input.write });
@@ -193,32 +194,44 @@ export class Store {
   }
   handoffs() { return this.db.prepare('SELECT data FROM handoffs ORDER BY rowid DESC').all().map(parse); }
   export() {
-    return { format: 'contextos', version: 1, exported_at: now(), memories: this.list('', this.actor(), { includeExpired: true }), versions: this.db.prepare('SELECT data FROM versions ORDER BY memory_id, version').all().map(parse), events: this.history(), handoffs: this.handoffs() };
+    return { format: 'contextos', version: 1, exported_at: now(), workspace: this.setting('workspace',{ name:'Personal workspace',reminders:true }), sample: this.setting('sample',false), permissions: Object.fromEntries(this.agents().map(a => [a.id,{namespaces:a.namespaces,write:a.write}])), memories: this.list('', this.actor(), { includeExpired: true }), versions: this.db.prepare('SELECT data FROM versions ORDER BY memory_id, version').all().map(parse), events: this.history(), handoffs: this.handoffs() };
   }
   import(bundle) {
     // Import is additive and atomic; a collision aborts instead of overwriting owned memory.
     if (!bundle || bundle.format !== 'contextos' || bundle.version !== 1 || !Array.isArray(bundle.memories) || bundle.memories.length > 10000 || !Array.isArray(bundle.versions) || !Array.isArray(bundle.events) || !Array.isArray(bundle.handoffs)) throw new AppError('Choose a ContextOS v1 JSON archive.');
+    for (const {id} of AGENTS) { const grant=bundle.permissions?.[id]; if (!grant || !Array.isArray(grant.namespaces) || grant.namespaces.some(n=>!NAMESPACES.includes(n)) || typeof grant.write!=='boolean') throw new AppError('Archive must contain valid agent permissions.'); }
+    if (!bundle.workspace || typeof bundle.workspace.name!=='string' || !bundle.workspace.name.trim() || bundle.workspace.name.length>70 || typeof bundle.workspace.reminders!=='boolean' || typeof bundle.sample!=='boolean') throw new AppError('Invalid workspace metadata.');
+    const wasEmpty = !this.db.prepare('SELECT id FROM memories LIMIT 1').get();
     const ids = new Set();
     const validateSnapshot = m => {
-      this.validate(m);
+      Object.assign(m, this.validate(m));
       if (typeof m.id !== 'string' || m.id.length > 100 || !m.id || !Number.isInteger(m.version) || m.version < 1 || typeof m.locked !== 'boolean' || typeof m.agent !== 'string') throw new AppError('Invalid memory identity or version.');
-      date(m.created_at, 'Creation date'); date(m.updated_at, 'Update date');
+      m.created_at = date(m.created_at, 'Creation date'); m.updated_at = date(m.updated_at, 'Update date');
       if (!m.created_at || !m.updated_at) throw new AppError('Memory dates are required.');
     };
     bundle.memories.forEach(m => { validateSnapshot(m); if (ids.has(m.id) || this.db.prepare('SELECT id FROM memories WHERE id=?').get(m.id)) throw new AppError('Archive contains an existing or duplicate memory. Import into an empty workspace.', 409); ids.add(m.id); });
     const validLinks = m => { if (m.related.some(id => !ids.has(id))) throw new AppError('Archive contains an unknown relationship.'); };
     bundle.memories.forEach(validLinks);
-    const versions = new Set();
-    bundle.versions.forEach(m => { validateSnapshot(m); validLinks(m); if (!ids.has(m.id)) throw new AppError('A version references an unknown memory.'); const key = `${m.id}:${m.version}`; if (versions.has(key)) throw new AppError('Duplicate memory version.'); versions.add(key); });
-    for (const m of bundle.memories) { const latest = bundle.versions.filter(v => v.id === m.id).sort((a,b) => b.version-a.version)[0]; if (!latest || JSON.stringify(latest) !== JSON.stringify(m)) throw new AppError('Current memories must match their latest version.'); }
+    const versions = new Set(), latestVersions = new Map();
+    bundle.versions.forEach(m => { validateSnapshot(m); validLinks(m); if (!ids.has(m.id)) throw new AppError('A version references an unknown memory.'); const key = `${m.id}:${m.version}`; if (versions.has(key)) throw new AppError('Duplicate memory version.'); versions.add(key); if (!latestVersions.has(m.id) || latestVersions.get(m.id).version < m.version) latestVersions.set(m.id,m); });
+    for (const m of bundle.memories) { const latest = latestVersions.get(m.id); if (!latest || !isDeepStrictEqual(latest,m)) throw new AppError('Current memories must match their latest version.'); }
     const eventIds = new Set();
-    bundle.events.forEach(e => { if (typeof e.id !== 'string' || eventIds.has(e.id) || typeof e.action !== 'string' || !e.timestamp || !Number.isFinite(Date.parse(e.timestamp)) || (e.memory_id && !ids.has(e.memory_id))) throw new AppError('Invalid event in archive.'); eventIds.add(e.id); if (e.snapshot) { validateSnapshot(e.snapshot); validLinks(e.snapshot); if (e.snapshot.id !== e.memory_id) throw new AppError('Event snapshot does not match its memory.'); } });
-    bundle.handoffs.forEach(h => { if (typeof h.id !== 'string' || typeof h.title !== 'string' || !AGENTS.some(a => a.id === h.target) || !Array.isArray(h.memories)) throw new AppError('Invalid handoff.'); h.memories.forEach(m => { validateSnapshot(m); if (!ids.has(m.id)) throw new AppError('Handoff references an unknown memory.'); }); });
+    bundle.events.forEach(e => { if (!e || typeof e.id !== 'string' || eventIds.has(e.id) || typeof e.action !== 'string' || typeof e.actor !== 'string' || typeof e.title !== 'string' || !e.timestamp || !Number.isFinite(Date.parse(e.timestamp)) || (e.memory_id && !ids.has(e.memory_id))) throw new AppError('Invalid event in archive.'); eventIds.add(e.id); e.timestamp = date(e.timestamp, 'Event date'); if (e.snapshot) { validateSnapshot(e.snapshot); validLinks(e.snapshot); if (e.snapshot.id !== e.memory_id) throw new AppError('Event snapshot does not match its memory.'); } });
+    bundle.handoffs.forEach(h => { if (!h || typeof h.id !== 'string' || typeof h.title !== 'string' || typeof h.notes !== 'string' || typeof h.from !== 'string' || !h.created_at || !AGENTS.some(a => a.id === h.target) || !Array.isArray(h.memories)) throw new AppError('Invalid handoff.'); h.created_at = date(h.created_at,'Handoff date'); h.memories.forEach(m => { validateSnapshot(m); validLinks(m); if (!ids.has(m.id)) throw new AppError('Handoff references an unknown memory.'); }); });
+    const paths = new Set();
+    for (const m of bundle.memories) { if (paths.has(m.path) || this.db.prepare("SELECT id FROM memories WHERE json_extract(data,'$.path')=?").get(m.path)) throw new AppError('Archive contains an existing or duplicate path.',409); paths.add(m.path); }
     return this.transaction(() => {
       for (const m of bundle.memories) this.db.prepare('INSERT INTO memories VALUES (?,?)').run(m.id, JSON.stringify(m));
       for (const v of bundle.versions) this.db.prepare('INSERT INTO versions VALUES (?,?,?)').run(v.id, v.version, JSON.stringify(v));
       for (const e of bundle.events) this.db.prepare('INSERT INTO events VALUES (?,?,?)').run(e.id, e.memory_id ?? null, JSON.stringify(e));
       for (const h of bundle.handoffs) this.db.prepare('INSERT INTO handoffs VALUES (?,?)').run(h.id, JSON.stringify(h));
+      for (const agent of this.agents()) {
+        const incoming=bundle.permissions[agent.id];
+        const restore=wasEmpty&&!this.setting(`grant:${agent.id}`);
+        this.grant(agent.id,{namespaces:restore?incoming.namespaces:incoming.namespaces.filter(n=>agent.namespaces.includes(n)),write:restore?incoming.write:incoming.write&&agent.write});
+      }
+      if (wasEmpty) { this.setSetting('workspace',bundle.workspace); this.setSetting('sample',bundle.sample); }
+      this.setSetting('initialized',true);
       this.event('imported', null, 'human', { title: 'Archive imported', count: ids.size });
       return { imported: ids.size };
     });

@@ -2,7 +2,7 @@
   --canvas: #fdfefb;
   --sidebar: #f7f9f4;
   --text: #303c2b;
-  --muted: #727c6b;
+  --muted: #697361;
   --green: #3c704f;
   --border: #e6ebdf;
 }
@@ -109,7 +109,7 @@ small { font-size: 12px; }
 .small-select { border: 1px solid #e6e9e1; background: white; color: #6c7566; border-radius: 5px; padding: 5px 8px; font-size: 10px; cursor: pointer; }
 .activity-panel { height: 290px; }
 .activity-chart { width: 100%; height: 176px; padding: 17px 17px 0 13px; }
-.activity-chart text { fill: #9ea699; font-size: 10px; font-family: inherit; }
+.activity-chart text { fill: #66735c; font-size: 10px; font-family: inherit; }
 .chart-legend { display: flex; align-items: center; gap: 20px; padding: 6px 25px 17px; font-size: 10px; color: #6c7565; }
 .legend-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 5px; }
 .legend-dot.semantic { background: #8eac70; }.legend-dot.episodic { background: #b2a1c2; }.legend-dot.procedural { background: #d5b982; }
@@ -157,8 +157,8 @@ small { font-size: 12px; }
 .agent-row .icon-button { padding-right: 0; margin-left: 4px; }
 .handoff-promo { padding: 21px; position: relative; min-height: 177px; background: #f0f5e9; border: 1px solid #e0e9d5; border-radius: 9px; overflow: hidden; }
 .handoff-promo h3 { color: #566b43; font-size: 13px; max-width: 225px; margin: 13px 0 7px; }
-.handoff-promo p { color: #687859; font-size: 11px; line-height: 1.7; max-width: 260px; margin-bottom: 16px; }
-.handoff-promo .text-link { font-size: 11px; color: #607a4b; }
+.handoff-promo p { color: #607052; font-size: 11px; line-height: 1.7; max-width: 260px; margin-bottom: 16px; }
+.handoff-promo .text-link { font-size: 11px; color: #597344; }
 .handoff-promo > .icon { color: #5d7b44; }
 .page-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: #6d7561; font-size: 10px; margin-top: 23px; padding-top: 4px; }
 .page-footer span { display: flex; align-items: center; gap: 6px; }

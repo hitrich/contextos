@@ -59,6 +59,7 @@ async function openMemory(id) {
   selected = await api(`/memories/${encodeURIComponent(id)}`); selectedTab = 'content';
   modal.close(); renderInspector();
   if (!inspector.open) inspector.showModal();
+  else inspector.querySelector('[data-action="close-inspector"]').focus();
 }
 function renderInspector() {
   const {memory:m,versions,events} = selected;
@@ -111,12 +112,16 @@ function importDialog() {
 async function copy(text, success) { try { await navigator.clipboard.writeText(text); toast(success); } catch { toast('Clipboard is unavailable. Select and copy the visible text.',true); } }
 
 document.addEventListener('click',async event=>{
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar?.classList.contains('open') && event.clientX > sidebar.getBoundingClientRect().right) {
+    sidebar.classList.remove('open'); document.querySelector('.mobile-menu')?.setAttribute('aria-expanded','false');
+  }
   const element = event.target.closest('button,a,[role="button"]'); if (!element) return;
   try {
     if (element.dataset.open) return await openMemory(element.dataset.open);
     if (element.dataset.agent) return await agentConfig(element.dataset.agent);
     if (element.dataset.handoff) return showHandoff(state.data.handoffs.find(h=>h.id===element.dataset.handoff));
-    if (element.dataset.inspectorTab) { selectedTab=element.dataset.inspectorTab; renderInspector(); return; }
+    if (element.dataset.inspectorTab) { selectedTab=element.dataset.inspectorTab; renderInspector(); inspector.querySelector(`[data-inspector-tab="${selectedTab}"]`).focus(); return; }
     if (element.dataset.restore) { const version = selected.versions.find(v=>v.version===Number(element.dataset.restore)); await api(`/memories/${encodeURIComponent(selected.memory.id)}`,'PUT',{...version,version:selected.memory.version}); await refresh(); await openMemory(selected.memory.id); toast('Earlier context restored as a new version.'); return; }
     switch (element.dataset.action) {
       case 'new-memory': memoryForm(); break;
@@ -164,7 +169,10 @@ document.addEventListener('keydown',event=>{
   if (event.target.matches('.command-result')&&['ArrowDown','ArrowUp'].includes(event.key)) {event.preventDefault(); const items=[...modal.querySelectorAll('.command-result')],index=items.indexOf(event.target);items[(index+(event.key==='ArrowDown'?1:-1)+items.length)%items.length]?.focus();}
   if (event.key==='Escape') document.querySelector('#sidebar')?.classList.remove('open');
 });
-for (const dialog of [modal,inspector]) dialog.addEventListener('click',event=>{ if (event.target===dialog) {const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();} });
+for (const dialog of [modal,inspector]) {
+  dialog.addEventListener('click',event=>{ if (event.target===dialog) {const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();} });
+  dialog.addEventListener('close',()=>{ if(document.activeElement===document.body&&!modal.open&&!inspector.open)document.querySelector('#main')?.focus(); });
+}
 window.addEventListener('hashchange',()=>{const page=location.hash.replace(/^#\/?/,'').split('/')[0];state.page=['overview','memories','graph','events','agents','handoffs','settings','docs'].includes(page)?page:'overview';render();window.scrollTo(0,0);});
 window.addEventListener('focus',()=>{ if (state.data&&!modal.open&&!inspector.open) refresh().catch(()=>{}); });
 // Refresh reminders and agent activity while visible; never replace an in-progress form.

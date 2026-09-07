@@ -309,3 +309,12 @@ dialog::backdrop { background: #22331d36; backdrop-filter: blur(2px); }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
 
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+@media (max-width: 760px) {
+  .sidebar { visibility: hidden; }
+  .sidebar.open { visibility: visible; }
+  .nav-item,.btn { min-height: 40px; }
+  .icon-button { min-width: 36px; min-height: 36px; }
+  .activity-chart text { font-size: 18px; }
+  .graph-panel { overflow: auto; }
+  .graph-panel > svg { min-width: 850px; height: 565px; }
+}

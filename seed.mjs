@@ -31,7 +31,7 @@ export function seed(store) {
   rows.forEach(([title, type, namespace, agent, content, tags], i) => {
     const memory = store.save({ title, type, namespace, content, tags, source: `Sample ${agent} session · ${tags[0]}`, confidence: [98, 96, 100, 92, 88, 95, 97, 99][i % 8], due_at: i === 1 ? new Date(Date.now() - 3600000).toISOString() : null, visibility: namespace === 'user' ? 'private' : 'agents', related: i > 0 && namespace === 'project' ? [ids[0]] : [] }, { ...store.actor(), id: agent });
     ids.push(memory.id);
-    const createdAt = new Date(Date.now() - (6 - Math.floor(i / 4)) * 86400000 - (4 - i % 4) * 3600000).toISOString();
+    const createdAt = new Date(Date.now() - (6 - Math.floor(i * 7 / rows.length)) * 86400000 - (4 - i % 4) * 3600000).toISOString();
     memory.created_at = createdAt; memory.updated_at = createdAt;
     store.db.prepare('UPDATE memories SET data=? WHERE id=?').run(JSON.stringify(memory), memory.id);
     store.db.prepare('UPDATE versions SET data=? WHERE memory_id=?').run(JSON.stringify(memory), memory.id);

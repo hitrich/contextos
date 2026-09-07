@@ -1,0 +1,21 @@
+name: Tests
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  local-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: '24'
+      - name: Check module syntax
+        run: |
+          for file in *.mjs public/*.js sdk/*.mjs scripts/*.mjs; do
+            node --check "$file"
+          done
+      - name: Verify memory, HTTP, MCP, SDKs, and migration
+        run: npm test

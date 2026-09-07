@@ -210,7 +210,7 @@ export class Store {
       if (!m.created_at || !m.updated_at) throw new AppError('Memory dates are required.');
     };
     bundle.memories.forEach(m => { validateSnapshot(m); if (ids.has(m.id) || this.db.prepare('SELECT id FROM memories WHERE id=?').get(m.id)) throw new AppError('Archive contains an existing or duplicate memory. Import into an empty workspace.', 409); ids.add(m.id); });
-    const validLinks = m => { if (m.related.some(id => !ids.has(id))) throw new AppError('Archive contains an unknown relationship.'); };
+    const validLinks = m => { if (m.related.includes(m.id) || m.related.some(id => !ids.has(id))) throw new AppError('Archive contains a self-reference or unknown relationship.'); };
     bundle.memories.forEach(validLinks);
     const versions = new Set(), latestVersions = new Map();
     bundle.versions.forEach(m => { validateSnapshot(m); validLinks(m); if (!ids.has(m.id)) throw new AppError('A version references an unknown memory.'); const key = `${m.id}:${m.version}`; if (versions.has(key)) throw new AppError('Duplicate memory version.'); versions.add(key); if (!latestVersions.has(m.id) || latestVersions.get(m.id).version < m.version) latestVersions.set(m.id,m); });

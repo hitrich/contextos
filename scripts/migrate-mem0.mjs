@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { Store, NAMESPACES } from '../core.mjs';
 
@@ -10,8 +10,8 @@ if (!values.input || !values.output || !NAMESPACES.includes(values.namespace)) {
 }
 const store = new Store(':memory:');
 try {
+  if (statSync(values.input).size>12*1024*1024) throw new Error('Input must be at most 12 MiB.');
   const raw=readFileSync(values.input,'utf8');
-  if (Buffer.byteLength(raw)>12*1024*1024) throw new Error('Input must be at most 12 MiB.');
   const data=JSON.parse(raw), rows=Array.isArray(data)?data:data.results;
   if (!Array.isArray(rows)||rows.length>10000) throw new Error('Expected an array of mem0 records or { results: [...] }.');
   rows.forEach((row,index)=>{

@@ -174,8 +174,9 @@ for (const dialog of [modal,inspector]) {
   dialog.addEventListener('close',()=>{ if(document.activeElement===document.body&&!modal.open&&!inspector.open)document.querySelector('#main')?.focus(); });
 }
 window.addEventListener('hashchange',()=>{const page=location.hash.replace(/^#\/?/,'').split('/')[0];state.page=['overview','memories','graph','events','agents','handoffs','settings','docs'].includes(page)?page:'overview';render();window.scrollTo(0,0);});
-window.addEventListener('focus',()=>{ if (state.data&&!modal.open&&!inspector.open) refresh().catch(()=>{}); });
+const canAutoRefresh = () => state.data && !modal.open && !inspector.open && state.page !== 'settings' && !document.activeElement?.matches('input,textarea,select');
+window.addEventListener('focus',()=>{ if (canAutoRefresh()) refresh().catch(()=>{}); });
 // Refresh reminders and agent activity while visible; never replace an in-progress form.
-setInterval(()=>{if(state.data&&!document.hidden&&!modal.open&&!inspector.open&&!document.activeElement?.matches('input,textarea,select'))refresh().catch(()=>{});},60000);
+setInterval(()=>{if(!document.hidden&&canAutoRefresh())refresh().catch(()=>{});},60000);
 try { state.page=location.hash.replace(/^#\/?/,'').split('/')[0]||'overview';if(!['overview','memories','graph','events','agents','handoffs','settings','docs'].includes(state.page))state.page='overview';await refresh(); }
 catch (error) { app.innerHTML=`<main class="loading-screen"><div class="empty">${icon('database',32)}<h1>Your workspace is taking a moment.</h1><p>${esc(error.message)}</p><button class="btn" id="retry-start">Try again</button></div></main>`;document.querySelector('#retry-start').addEventListener('click',()=>location.reload()); }

@@ -40,6 +40,8 @@ test('memory lifecycle preserves lineage, permissions, locks, history and portab
   const empty = new Store(':memory:');
   assert.throws(() => empty.import(bad));
   assert.equal(empty.list().length, 0);
+  const selfReferencing = structuredClone(exported); selfReferencing.memories[0].related=[selfReferencing.memories[0].id];
+  assert.throws(()=>empty.import(selfReferencing),/self-reference/);
   const reordered=structuredClone(exported);reordered.memories=reordered.memories.map(m=>Object.fromEntries(Object.entries(m).reverse()));
   empty.grant('claude',{namespaces:[],write:false});
   assert.equal(empty.import(reordered).imported,2);

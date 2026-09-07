@@ -1,0 +1,15 @@
+{
+  "name": "contextos",
+  "version": "0.1.0",
+  "description": "A portable, inspectable home for agent memory.",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs",
+    "test": "node --test test/*.test.mjs",
+    "mcp": "node mcp.mjs"
+  },
+  "license": "MIT"
+}

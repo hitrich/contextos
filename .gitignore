@@ -1,0 +1,11 @@
+node_modules/
+.contextos/
+.env
+.env.*
+*.db
+*.db-shm
+*.db-wal
+*.sqlite*
+coverage/
+test-results/
+.DS_Store

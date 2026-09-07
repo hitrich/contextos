@@ -68,6 +68,7 @@ export class Store {
   actor(agent = 'human', scopes = NAMESPACES) {
     if (agent === 'human') return { id: 'human', scopes: NAMESPACES, owner: true };
     if (!AGENTS.some(a => a.id === agent)) throw new AppError('Unknown agent.');
+    if (!Array.isArray(scopes) || scopes.some(s => !NAMESPACES.includes(s))) throw new AppError('Invalid namespace scope.');
     const grants = this.setting(`grant:${agent}`, { namespaces: ['project'], write: true });
     return { id: agent, scopes: scopes.filter(s => grants.namespaces.includes(s)), write: grants.write, owner: false };
   }

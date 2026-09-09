@@ -12,7 +12,7 @@ const store = new Store(database);
 if (process.argv.includes('--demo')) seed(store);
 const port = Number(process.env.PORT || 3000);
 const allowedHosts = new Set([`localhost:${port}`, `127.0.0.1:${port}`]);
-const mime = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.md': 'text/markdown', '.ttf': 'font/ttf' };
+const mime = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.md': 'text/markdown' };
 const json = (response, value, status = 200) => { response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); response.end(JSON.stringify(value)); };
 
 async function body(request) {

@@ -1,7 +1,9 @@
 import { icon } from './icons.js';
 import { shell, memoryResults, eventResults, searchMatch, esc, types, typeIcons, typeIcon, cap, badge, agentName, agentLogo, relative, dateLabel, active, empty } from './views.js';
 
-const state = { data: null, page: 'overview', type: 'all', namespace: 'all', query: '', sort: 'updated', view: 'list', eventAction: 'all', eventQuery: '', chartDays: 7 };
+const state = { appearance: 'system', data: null, page: 'overview', type: 'all', namespace: 'all', query: '', sort: 'updated', view: 'list', eventAction: 'all', eventQuery: '', chartDays: 7 };
+try { state.appearance = localStorage.getItem('contextos-appearance') || 'system'; } catch {}
+document.documentElement.dataset.theme = state.appearance;
 const app = document.querySelector('#app'), modal = document.querySelector('#modal'), inspector = document.querySelector('#inspector');
 let selected = null, selectedTab = 'content', configAgent = null, configCode = '', toastTimeout;
 async function api(path, method = 'GET', data) {
@@ -154,6 +156,7 @@ document.addEventListener('input',event=>{
   if (event.target.id==='event-search') {state.eventQuery=event.target.value; document.querySelector('#event-results').innerHTML=eventResults(state);}
 });
 document.addEventListener('change',event=>{
+  if (event.target.id==='appearance') { state.appearance=event.target.value; document.documentElement.dataset.theme=state.appearance; try { localStorage.setItem('contextos-appearance',state.appearance); } catch { toast('Appearance changed for this session. Browser storage is unavailable.',true); } }
   if (event.target.id==='namespace-filter') {state.namespace=event.target.value;document.querySelector('#memory-results').innerHTML=memoryResults(state);}
   if (event.target.id==='sort-memories') {state.sort=event.target.value;document.querySelector('#memory-results').innerHTML=memoryResults(state);}
   if (event.target.id==='chart-days') {state.chartDays=Number(event.target.value);render();}

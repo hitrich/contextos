@@ -37,13 +37,14 @@ function memoryForm(memory = null) {
     ${field('Memory type','type',`<select id="field-type" name="type">${options(types,m.type)}</select>`)}
     ${field('Namespace','namespace',`<select id="field-namespace" name="namespace" ${memory?'disabled':''}>${options(['project','user','team'],m.namespace)}</select>`)}
     ${field('Source / provenance','source',`<input id="field-source" name="source" value="${esc(m.source)}" placeholder="A discussion, file, session, or observation" required maxlength="500">`,true)}
+    </div><details class="advanced-fields" ${memory?'open':''}><summary>More options<span>Privacy, confidence, dates, and connections</span></summary><div class="form-grid">
     ${field('Tags <span class="optional">· comma separated</span>','tags',`<input id="field-tags" name="tags" value="${esc(m.tags.join(', '))}" placeholder="architecture, decisions">`)}
     ${field('Confidence · %','confidence',`<input id="field-confidence" name="confidence" type="number" min="0" max="100" value="${m.confidence}" required>`)}
     ${field('Visibility','visibility',`<select id="field-visibility" name="visibility">${options(['agents','private'],m.visibility,v=>v==='agents'?'Available to permitted agents':'Private · only you')}</select>`)}
     ${field('Review on <span class="optional">· optional</span>','due_at',`<input id="field-due_at" name="due_at" type="date" value="${dateInput(m.due_at)}">`)}
     ${field('Expires on <span class="optional">· optional</span>','expires_at',`<input id="field-expires_at" name="expires_at" type="date" value="${dateInput(m.expires_at)}"><small>Hidden from agents after this date; retained for inspection.</small>`)}
     ${field('Related memories <span class="optional">· optional</span>','related',`<select id="field-related" name="related" multiple aria-describedby="related-hint">${state.data.memories.filter(r=>r.id!==m.id).map(r=>`<option value="${esc(r.id)}" ${m.related.includes(r.id)?'selected':''}>${esc(r.title)}</option>`).join('')}</select><small id="related-hint">Hold ⌘ or Ctrl to select multiple memories.</small>`)}
-    </div></div>${closeFooter(memory?'Save new version':'Save memory')}</form>`,true);
+    </div></details></div>${closeFooter(memory?'Save new version':'Save memory')}</form>`,true);
   modal.querySelector('#memory-form').addEventListener('submit', async event => {
     event.preventDefault(); const form = event.currentTarget, data = new FormData(form);
     const input = { ...(memory||{}), title:data.get('title'), content:data.get('content'), type:data.get('type'), namespace:memory?.namespace || data.get('namespace'), source:data.get('source'), tags:data.get('tags').split(',').map(s=>s.trim()).filter(Boolean), confidence:Number(data.get('confidence')), visibility:data.get('visibility'), due_at:data.get('due_at') || null, expires_at:data.get('expires_at') || null, related:data.getAll('related') };
@@ -52,10 +53,11 @@ function memoryForm(memory = null) {
 }
 async function submit(form, work) {
   const button = form.querySelector('button[type="submit"]') || form.querySelector('button.primary');
+  form.setAttribute('aria-busy','true');
   if (button) button.disabled = true;
   const error = form.querySelector('.form-error'); if (error) error.textContent = '';
   try { await work(); } catch (e) { if (error) error.textContent = e.message; else toast(e.message,true); }
-  finally { if (button) button.disabled = false; }
+  finally { form.setAttribute('aria-busy','false'); if (button) button.disabled = false; }
 }
 async function openMemory(id) {
   selected = await api(`/memories/${encodeURIComponent(id)}`); selectedTab = 'content';

@@ -367,3 +367,11 @@ dialog[open]::backdrop { opacity: 1; }
   .topbar, .sidebar { background: var(--canvas); backdrop-filter: none; }
   .panel, .memory-card, .handoff-promo, .stat-grid { outline: var(--size-1) solid var(--border); }
 }
+
+.advanced-fields { margin-top: var(--size-24); border-top: 1px solid var(--border); padding-top: var(--size-18); }
+.advanced-fields summary { cursor: pointer; font-weight: 600; color: var(--text); min-height: var(--size-32); }
+.advanced-fields summary span { display: block; margin: var(--size-6) 0 0 var(--size-18); font-size: var(--size-12); font-weight: 400; color: var(--muted); }
+.advanced-fields[open] .form-grid { margin-top: var(--size-24); }
+.advanced-fields summary:hover { color: var(--accent-text); }
+.advanced-fields summary:active { opacity: .7; }
+dialog:not([open]), dialog:not([open])::backdrop { pointer-events: none; }

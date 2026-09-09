@@ -171,3 +171,5 @@ ContextOS does not claim to reproduce their experimental results.
 
 [MIT](LICENSE) for ContextOS. Vendored [Lucide](https://lucide.dev) icons retain their
 [ISC and underlying Feather license notices](public/LUCIDE-LICENSE).
+
+Typography uses the self-hosted [Outfit variable font](https://github.com/google/fonts/tree/main/ofl/outfit), distributed under the [SIL Open Font License](public/fonts/OFL.txt). No font requests leave your machine.

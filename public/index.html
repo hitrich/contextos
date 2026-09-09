@@ -7,12 +7,13 @@
     <meta name="description" content="A portable, inspectable home for everything your agents know. Your memory, on your machine.">
     <title>ContextOS — Your context, connected</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preload" href="/fonts/outfit-variable.ttf" as="font" type="font/ttf" crossorigin>
     <link rel="stylesheet" href="/styles.css">
     <script type="module" src="/app.js"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <div id="app"><div class="loading-screen"><span class="loading-dot"></span> Opening your workspace…</div></div>
+    <div id="app"><div class="workspace-loading" role="status"><p>Opening your workspace…</p><div aria-hidden="true"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-stats"></div><div class="skeleton skeleton-panel"></div></div></div></div>
     <dialog id="modal" class="modal"></dialog>
     <dialog id="inspector" class="inspector"></dialog>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
